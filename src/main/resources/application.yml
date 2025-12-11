@@ -1,0 +1,23 @@
+spring:
+  application:
+    name: saboq-backend
+  datasource:
+    url: jdbc:postgresql://localhost:5432/saboq_db
+    username: saboqUsr
+    password: saboq12#$
+    driver-class-name: org.postgresql.Driver
+    jpa:
+      properties:
+        hibernate:
+          ddl-auto: update
+          dialect: org.hibernate.dialect.PostgreSQLDialect
+    flyway:
+      enabled: true
+      baseline-on-migrate: true
+
+springdoc:
+  api-docs:
+    path: /api-docs       # The JSON data comes from here
+  swagger-ui:
+    path: /swagger-ui.html # The UI is accessible here
+    operations-sorter: method # Sorts endpoints by GET, POST, PUT, etc.

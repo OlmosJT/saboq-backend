@@ -1,0 +1,18 @@
+version: '3.8'
+
+services:
+  saboq-db:
+    image: postgres:16-alpine
+    container_name: saboq-db
+    ports:
+      - "5432:5432" # Exposes DB port to your local machine
+    environment:
+      POSTGRES_DB: saboq_db
+      POSTGRES_USER: saboqUsr
+      POSTGRES_PASSWORD: saboq12#$
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    restart: always
+
+volumes:
+  postgres-data:
