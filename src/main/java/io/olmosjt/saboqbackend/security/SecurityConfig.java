@@ -76,7 +76,7 @@ public class SecurityConfig {
 
         // Allow your frontend origin (e.g., Nuxt running on port 3000)
         // Use "*" for development, but specify domain for production
-        configuration.setAllowedOrigins(List.of("http://localhost:3000"));
+        configuration.setAllowedOrigins(List.of("http://localhost:3000", "http://localhost:8080"));
 
         // Allow standard methods
         configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "OPTIONS", "PATCH"));
