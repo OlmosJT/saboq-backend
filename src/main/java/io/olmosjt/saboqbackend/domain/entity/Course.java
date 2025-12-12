@@ -43,7 +43,7 @@ public class Course {
     private boolean isPublished = false;
 
     @OneToMany(mappedBy = "course", cascade = CascadeType.ALL, orphanRemoval = true)
-    @OrderBy("position ASC") // Automatically sort list by position
+    @OrderBy("position ASC")
     @ToString.Exclude
     @Builder.Default
     private List<Lesson> lessons = new ArrayList<>();

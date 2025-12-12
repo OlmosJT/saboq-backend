@@ -9,41 +9,50 @@ import java.util.UUID;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class CourseDto {
-    public record CreateCourseRequest(
+    public record CreateRequest(
             String title,
             String description,
-            String thumbnailUrl
+            String thumbnailUrl // Preview Image URL
     ) {}
 
-    public record UpdateCourseRequest(
+    public record UpdateRequest(
             String title,
             String description,
             String thumbnailUrl,
             Boolean isPublished
     ) {}
 
-    public record CourseSummaryResponse(
+    public record Summary(
+            UUID id,
+            AuthorInfo author,
+            String title,
+            String description,
+            String thumbnailUrl,
+            CourseStatus status,
+            Boolean isPublished,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt
+    ) {}
+
+    public record Detail(
             UUID id,
             String title,
             String description,
             String thumbnailUrl,
             CourseStatus status,
             Boolean isPublished,
-            UUID authorId,
+            AuthorInfo author,
+            java.util.List<LessonDto.Summary> lessons,
             LocalDateTime createdAt
     ) {}
 
-    public record CourseDetailResponse(
+    public record AuthorInfo(
             UUID id,
-            String title,
-            String description,
-            String thumbnailUrl,
-            CourseStatus status,
-            Boolean isPublished,
-            UUID authorId,
-            java.util.List<LessonDtos.LessonSummaryResponse> lessons,
-            LocalDateTime createdAt
+            String email,
+            String username,
+            String firstName,
+            String lastName,
+            String avatarUrl
     ) {}
-
 
 }

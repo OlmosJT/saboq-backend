@@ -1,20 +1,22 @@
 package io.olmosjt.saboqbackend.domain.mapper;
 
-import io.olmosjt.saboqbackend.domain.dto.ComponentDtos;
-import io.olmosjt.saboqbackend.domain.dto.LessonDtos;
-import io.olmosjt.saboqbackend.domain.dto.SectionDtos;
+import io.olmosjt.saboqbackend.domain.dto.ComponentDto;
+import io.olmosjt.saboqbackend.domain.dto.LessonDto;
+import io.olmosjt.saboqbackend.domain.dto.SectionDto;
+import io.olmosjt.saboqbackend.domain.entity.Component;
 import io.olmosjt.saboqbackend.domain.entity.Lesson;
 import io.olmosjt.saboqbackend.domain.entity.Section;
-import org.springframework.stereotype.Component;
+import lombok.NoArgsConstructor;
 
 import java.util.Collections;
 import java.util.List;
 
-@Component
-public class LessonMapper {
-    // --- 1. Map Single Lesson to Summary ---
-    public LessonDtos.LessonSummaryResponse toSummary(Lesson lesson) {
-        return new LessonDtos.LessonSummaryResponse(
+@NoArgsConstructor(access = lombok.AccessLevel.PRIVATE)
+public final class LessonMapper {
+
+    // --- 1. Summary ---
+    public static LessonDto.Summary toSummary(Lesson lesson) {
+        return new LessonDto.Summary(
                 lesson.getId(),
                 lesson.getTitle(),
                 lesson.getPosition(),
@@ -23,50 +25,44 @@ public class LessonMapper {
         );
     }
 
-    // --- 2. Map Full Lesson Tree (Detail) ---
-    public LessonDtos.LessonDetailResponse toDetail(Lesson lesson) {
-        return new LessonDtos.LessonDetailResponse(
+    // --- 2. Detail (Deep Map) ---
+    public static LessonDto.Detail toDetail(Lesson lesson) {
+        return new LessonDto.Detail(
                 lesson.getId(),
                 lesson.getTitle(),
                 lesson.getPosition(),
                 lesson.isPublished(),
                 lesson.getStatus(),
-                toSectionResponseList(lesson.getSections())
+                toSectionDetailList(lesson.getSections())
         );
     }
 
-    // --- Helper: Sections ---
-    private List<SectionDtos.SectionResponse> toSectionResponseList(List<Section> sections) {
-        if (sections == null) return Collections.emptyList();
+    // --- Helpers ---
 
-        return sections.stream()
-                .map(this::toSectionResponse)
-                .toList();
+    private static List<SectionDto.Detail> toSectionDetailList(List<Section> sections) {
+        if (sections == null) return Collections.emptyList();
+        return sections.stream().map(LessonMapper::toSectionDetail).toList();
     }
 
-    private SectionDtos.SectionResponse toSectionResponse(Section section) {
-        return new SectionDtos.SectionResponse(
+    private static SectionDto.Detail toSectionDetail(Section section) {
+        return new SectionDto.Detail(
                 section.getId(),
                 section.getTitle(),
                 section.getPosition(),
-                toComponentResponseList(section.getComponents())
+                toComponentDetailList(section.getComponents())
         );
     }
 
-    // --- Helper: Components ---
-    private List<ComponentDtos.ComponentResponse> toComponentResponseList(List<io.olmosjt.saboqbackend.domain.entity.Component> components) {
+    private static List<ComponentDto.Detail> toComponentDetailList(List<Component> components) {
         if (components == null) return Collections.emptyList();
-
-        return components.stream()
-                .map(this::toComponentResponse)
-                .toList();
+        return components.stream().map(LessonMapper::toComponentDetail).toList();
     }
 
-    private ComponentDtos.ComponentResponse toComponentResponse(io.olmosjt.saboqbackend.domain.entity.Component component) {
-        return new ComponentDtos.ComponentResponse(
+    private static ComponentDto.Detail toComponentDetail(Component component) {
+        return new ComponentDto.Detail(
                 component.getId(),
                 component.getType(),
-                component.getContent(), // The JSONB object is passed as-is
+                component.getContent(),
                 component.getPosition()
         );
     }

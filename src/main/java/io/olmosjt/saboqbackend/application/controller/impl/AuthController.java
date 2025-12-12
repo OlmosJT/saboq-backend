@@ -1,6 +1,6 @@
-package io.olmosjt.saboqbackend.application.controller;
+package io.olmosjt.saboqbackend.application.controller.impl;
 
-import io.olmosjt.saboqbackend.domain.dto.AuthDtos;
+import io.olmosjt.saboqbackend.domain.dto.AuthDto;
 import io.olmosjt.saboqbackend.domain.service.AuthService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -17,15 +17,15 @@ public class AuthController {
     private final AuthService authService;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthDtos.AuthResponse> register(
-            @RequestBody AuthDtos.RegisterRequest request
+    public ResponseEntity<AuthDto.AuthResponse> register(
+            @RequestBody AuthDto.RegisterRequest request
     ) {
         return ResponseEntity.ok(authService.register(request));
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthDtos.AuthResponse> authenticate(
-            @RequestBody AuthDtos.LoginRequest request
+    public ResponseEntity<AuthDto.AuthResponse> authenticate(
+            @RequestBody AuthDto.LoginRequest request
     ) {
         return ResponseEntity.ok(authService.authenticate(request));
     }

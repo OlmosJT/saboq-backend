@@ -1,8 +1,8 @@
 package io.olmosjt.saboqbackend.domain.service;
 
-import io.olmosjt.saboqbackend.domain.dto.ComponentDtos;
-import io.olmosjt.saboqbackend.domain.dto.LessonDtos;
-import io.olmosjt.saboqbackend.domain.dto.SectionDtos;
+import io.olmosjt.saboqbackend.domain.dto.ComponentDto;
+import io.olmosjt.saboqbackend.domain.dto.LessonDto;
+import io.olmosjt.saboqbackend.domain.dto.SectionDto;
 import io.olmosjt.saboqbackend.domain.entity.Component;
 import io.olmosjt.saboqbackend.domain.entity.Course;
 import io.olmosjt.saboqbackend.domain.entity.Lesson;
@@ -26,63 +26,77 @@ import java.util.UUID;
 public class LessonService {
     private final LessonRepository lessonRepository;
     private final CourseRepository courseRepository;
-    private final LessonMapper lessonMapper;
 
-    /**
-     * Handles both CREATING (New Lesson) and UPDATING (Save Draft).
-     *
-     * @param courseId Only needed if creating a new lesson (lessonId is null).
-     * @param lessonId If provided, we update this existing lesson.
-     * @param request  The full deep structure of the lesson.
-     * @return The ID of the saved lesson.
-     */
+    // --- CREATE ---
+
     @Transactional
-    public UUID saveLesson(UUID userId, UUID courseId, UUID lessonId, LessonDtos.SaveLessonRequest request) {
-        Lesson lesson;
+    public UUID createLesson(UUID userId, UUID courseId, LessonDto.UpsertRequest request) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
 
-        if (lessonId == null) {
-            // --- CREATE MODE ---
-            Course course = courseRepository.findById(courseId)
-                    .orElseThrow(() -> new RuntimeException("Course not found"));
+        // SECURITY CHECK: Is the actor the author of the course?
+        validateAuthor(course, userId);
 
-            // SECURITY CHECK: Is the actor the author?
-            validateAuthor(course, userId);
+        Lesson lesson = Lesson.builder()
+                .course(course)
+                .title(request.title())
+                .position(request.position() != null ? request.position() : 0)
+                .isPublished(request.isPublished())
+                .status(request.isPublished() ? LessonStatus.PUBLISHED : LessonStatus.DRAFT)
+                .build();
 
-            lesson = Lesson.builder()
-                    .course(course)
-                    .title(request.title())
-                    .position(request.position() != null ? request.position() : 0)
-                    .isPublished(request.isPublished())
-                    .status(request.isPublished() ? LessonStatus.PUBLISHED : LessonStatus.DRAFT)
-                    .build();
-        } else {
-            // --- UPDATE MODE ---
-            lesson = lessonRepository.findById(lessonId)
-                    .orElseThrow(() -> new RuntimeException("Lesson not found"));
+        // Use the shared helper to handle deep structure
+        mergeSections(lesson, request.sections());
 
-            // SECURITY CHECK
-            validateAuthor(lesson.getCourse(), userId);
+        return lessonRepository.save(lesson).getId();
+    }
 
+    // --- UPDATE ---
+
+    @Transactional
+    public UUID updateLesson(UUID userId, UUID lessonId, LessonDto.UpsertRequest request) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+
+        // SECURITY CHECK: Is the actor the author of the parent course?
+        validateAuthor(lesson.getCourse(), userId);
+
+        // Update Fields
+        if(request.title() != null && !request.title().isBlank()) {
             lesson.setTitle(request.title());
-            if (request.position() != null) lesson.setPosition(request.position());
-            lesson.setPublished(request.isPublished());
-            lesson.setStatus(request.isPublished() ? LessonStatus.PUBLISHED : LessonStatus.DRAFT);
         }
+
+        if (request.position() != null) {
+            lesson.setPosition(request.position());
+        }
+
+        if(request.isPublished() != null) {
+            lesson.setPublished(request.isPublished());
+        }
+
+        lesson.setStatus(request.status().equals(LessonStatus.PUBLISHED) ? LessonStatus.PUBLISHED : LessonStatus.DRAFT);
 
         mergeSections(lesson, request.sections());
         return lessonRepository.save(lesson).getId();
     }
 
-    public LessonDtos.LessonDetailResponse getLesson(UUID lessonId) {
-        return null;
+    // --- READ ---
+
+    @Transactional(readOnly = true)
+    public LessonDto.Detail getLesson(UUID lessonId) {
+        Lesson lesson = lessonRepository.findById(lessonId)
+                .orElseThrow(() -> new RuntimeException("Lesson not found"));
+
+        return LessonMapper.toDetail(lesson);
     }
+
+    // --- PUBLISH SHORTCUT ---
 
     @Transactional
     public void publishLesson(UUID userId, UUID lessonId) {
         Lesson lesson = lessonRepository.findById(lessonId)
                 .orElseThrow(() -> new RuntimeException("Lesson not found"));
 
-        // SECURITY CHECK
         validateAuthor(lesson.getCourse(), userId);
 
         lesson.setPublished(true);
@@ -92,10 +106,9 @@ public class LessonService {
 
     // ==================================================================================
     // HELPERS: The "Diffing" Logic
-    // This logic ensures we update existing rows instead of deleting/re-inserting everything.
     // ==================================================================================
 
-    private void mergeSections(Lesson lesson, List<SectionDtos.SectionDto> incomingSections) {
+    private void mergeSections(Lesson lesson, List<SectionDto.Upsert> incomingSections) {
         if (incomingSections == null) {
             lesson.getSections().clear();
             return;
@@ -103,37 +116,31 @@ public class LessonService {
 
         List<Section> finalSections = new ArrayList<>();
 
-        for (SectionDtos.SectionDto secDto : incomingSections) {
+        for (SectionDto.Upsert secDto : incomingSections) {
             Section section;
             if (secDto.id() != null) {
-                // Try to find existing section in the database list
+                // Try to find existing section
                 section = lesson.getSections().stream()
                         .filter(s -> s.getId().equals(secDto.id()))
                         .findFirst()
-                        .orElse(new Section()); // Fallback: Treat as new if ID not found
+                        .orElse(new Section());
             } else {
                 section = new Section();
             }
 
-            // Update simple fields
-            section.setLesson(lesson); // Parent reference
+            section.setLesson(lesson);
             section.setTitle(secDto.title());
             section.setPosition(secDto.position());
 
-            // Recursively merge components
             mergeComponents(section, secDto.components());
-
             finalSections.add(section);
         }
 
-        // This is the magic part:
-        // By clearing and adding, Hibernate's orphanRemoval=true will DELETE any sections
-        // that were in the DB but are NOT in 'finalSections'.
         lesson.getSections().clear();
         lesson.getSections().addAll(finalSections);
     }
 
-    private void mergeComponents(Section section, List<ComponentDtos.ComponentDto> incomingComponents) {
+    private void mergeComponents(Section section, List<ComponentDto.Upsert> incomingComponents) {
         if (incomingComponents == null) {
             section.getComponents().clear();
             return;
@@ -141,10 +148,9 @@ public class LessonService {
 
         List<Component> finalComponents = new ArrayList<>();
 
-        for (ComponentDtos.ComponentDto compDto : incomingComponents) {
+        for (ComponentDto.Upsert compDto : incomingComponents) {
             Component component;
             if (compDto.id() != null) {
-                // Try to find existing component
                 component = section.getComponents().stream()
                         .filter(c -> c.getId().equals(compDto.id()))
                         .findFirst()
@@ -153,18 +159,14 @@ public class LessonService {
                 component = new Component();
             }
 
-            // Update fields
-            component.setSection(section); // Parent reference
+            component.setSection(section);
             component.setPosition(compDto.position());
-            component.setContent(compDto.content()); // The JSONB Payload
-
-            // Important: Helper method in Component entity syncs the discriminator 'type'
+            component.setContent(compDto.content());
             component.syncType();
 
             finalComponents.add(component);
         }
 
-        // Hibernate orphanRemoval handles deletions
         section.getComponents().clear();
         section.getComponents().addAll(finalComponents);
     }
@@ -174,6 +176,4 @@ public class LessonService {
             throw new RuntimeException("Unauthorized: You are not the author of this course.");
         }
     }
-
-
 }

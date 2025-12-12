@@ -7,22 +7,21 @@ import java.util.List;
 import java.util.UUID;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class SectionDtos {
+public final class SectionDto {
 
-    // Used inside SaveLessonRequest
-    public record SectionDto(
-            UUID id, // Null = Create New, UUID = Update Existing
+    public record Upsert(
+            UUID id, // Null = Create, UUID = Update
             String title,
             Integer position,
-            List<ComponentDtos.ComponentDto> components
+            List<ComponentDto.Upsert> components
     ) {}
 
-    // Used inside LessonDetailResponse
-    public record SectionResponse(
+    // Used inside LessonDto.Detail
+    public record Detail(
             UUID id,
             String title,
             Integer position,
-            List<ComponentDtos.ComponentResponse> components
+            List<ComponentDto.Detail> components
     ) {}
 
 }

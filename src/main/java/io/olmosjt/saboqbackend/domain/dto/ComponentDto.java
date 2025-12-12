@@ -8,17 +8,16 @@ import lombok.NoArgsConstructor;
 import java.util.UUID;
 
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class ComponentDtos {
+public final class ComponentDto {
 
-    // Used inside SaveLessonRequest
-    public record ComponentDto(
-            UUID id, // Null = Create New, UUID = Update Existing
+    public record Upsert(
+            UUID id, // Null = Create, UUID = Update
             ComponentContent content, // Polymorphic JSON
             Integer position
     ) {}
 
-    // Used inside LessonDetailResponse
-    public record ComponentResponse(
+    // Used inside SectionDto.Detail
+    public record Detail(
             UUID id,
             ComponentType type,
             ComponentContent content,

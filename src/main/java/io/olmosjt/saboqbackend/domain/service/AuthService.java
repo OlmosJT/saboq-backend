@@ -1,14 +1,18 @@
 package io.olmosjt.saboqbackend.domain.service;
 
-import io.olmosjt.saboqbackend.domain.dto.AuthDtos;
+import io.olmosjt.saboqbackend.domain.dto.AuthDto;
 import io.olmosjt.saboqbackend.domain.entity.User;
 import io.olmosjt.saboqbackend.domain.repository.UserRepository;
 import io.olmosjt.saboqbackend.security.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+
+import java.util.UUID;
 
 @Service
 @RequiredArgsConstructor
@@ -19,7 +23,7 @@ public class AuthService {
     private final JwtService jwtService;
     private final AuthenticationManager authenticationManager;
 
-    public AuthDtos.AuthResponse register(AuthDtos.RegisterRequest request) {
+    public AuthDto.AuthResponse register(AuthDto.RegisterRequest request) {
         var user = User.builder()
                 .firstName(request.firstName())
                 .lastName(request.lastName())
@@ -36,10 +40,10 @@ public class AuthService {
         );
         var jwtToken = jwtService.generateToken(userDetails);
 
-        return new AuthDtos.AuthResponse(jwtToken);
+        return new AuthDto.AuthResponse(jwtToken);
     }
 
-    public AuthDtos.AuthResponse authenticate(AuthDtos.LoginRequest request) {
+    public AuthDto.AuthResponse authenticate(AuthDto.LoginRequest request) {
         authenticationManager.authenticate(
                 new UsernamePasswordAuthenticationToken(request.email(), request.password())
         );
@@ -50,6 +54,12 @@ public class AuthService {
         );
         var jwtToken = jwtService.generateToken(userDetails);
 
-        return new AuthDtos.AuthResponse(jwtToken);
+        return new AuthDto.AuthResponse(jwtToken);
+    }
+
+    public UUID getUserId(UserDetails userDetails) {
+        return userRepository.findByEmail(userDetails.getUsername())
+                .orElseThrow(() -> new UsernameNotFoundException("User not found"))
+                .getId();
     }
 }
