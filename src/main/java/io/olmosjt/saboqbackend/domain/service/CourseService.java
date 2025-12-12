@@ -43,6 +43,36 @@ public class CourseService {
         return mapToSummary(saved);
     }
 
+    @Transactional
+    public CourseDto.CourseSummaryResponse updateCourse(UUID userId, UUID courseId, CourseDto.UpdateCourseRequest request) {
+        Course course = courseRepository.findById(courseId)
+                .orElseThrow(() -> new RuntimeException("Course not found"));
+
+        if (!course.getAuthor().getId().equals(userId)) {
+            throw new RuntimeException("You are not allowed to update this course");
+        }
+
+        if (request.title() != null) {
+            course.setTitle(request.title());
+        }
+
+        if (request.description() != null) {
+            course.setDescription(request.description());
+        }
+
+        if (request.thumbnailUrl() != null) {
+            course.setThumbnailUrl(request.thumbnailUrl());
+        }
+
+        if (request.isPublished() != null) {
+            course.setPublished(request.isPublished());
+        }
+
+        Course updated = courseRepository.save(course);
+        return mapToSummary(updated);
+    }
+
+
     @Transactional(readOnly = true)
     public List<CourseDto.CourseSummaryResponse> getAllCoursesForUser(UUID userId) {
         // Note: Ensure you added 'List<Course> findByAuthorId(UUID authorId);' to CourseRepository

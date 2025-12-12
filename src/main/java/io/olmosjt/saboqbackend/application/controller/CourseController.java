@@ -48,6 +48,24 @@ public class CourseController {
     }
 
     /**
+     * 4. Update a Course
+     * PUT /api/v1/courses/{courseId}
+     */
+    @PutMapping("/{courseId}")
+    public ResponseEntity<CourseDto.CourseSummaryResponse> updateCourse(
+            @PathVariable UUID courseId,
+            @RequestBody CourseDto.UpdateCourseRequest request,
+            @AuthenticationPrincipal UserDetails userDetails
+    ) {
+        UUID userId = getUserId(userDetails);
+
+        CourseDto.CourseSummaryResponse response =
+                courseService.updateCourse(userId, courseId, request);
+
+        return ResponseEntity.ok(response);
+    }
+
+    /**
      * 2. Get "My Courses" (Dashboard)
      * GET /api/v1/courses
      */
