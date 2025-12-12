@@ -6,14 +6,11 @@ spring:
     username: saboqUsr
     password: saboq12#$
     driver-class-name: org.postgresql.Driver
-    jpa:
-      properties:
-        hibernate:
-          ddl-auto: update
-          dialect: org.hibernate.dialect.PostgreSQLDialect
-    flyway:
-      enabled: true
-      baseline-on-migrate: true
+  jpa:
+    properties:
+      hibernate:
+        ddl-auto: create-drop
+        dialect: org.hibernate.dialect.PostgreSQLDialect
 
 springdoc:
   api-docs:
